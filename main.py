@@ -3,7 +3,7 @@ import random
 
 WIDTH = 700
 HEIGHT = 700
-SPEED = 50
+SPEED = 100
 SPACE_SIZE = 50
 BODY_PARTS = 3
 SNAKE_COLOR = "#42ddf5"
@@ -34,6 +34,7 @@ class Food:
         self.coordinates = [x,y]
 
         canvas.create_oval(x, y, x + SPACE_SIZE, y + SPACE_SIZE, fill = FOOD_COLOR, tag = "food")
+         
 def next_turn(snake, food):
     x, y = snake.coordinates[0]
     if direction == "up":
@@ -50,27 +51,75 @@ def next_turn(snake, food):
     square = canvas.create_rectangle(x, y, x + SPACE_SIZE, y + SPACE_SIZE, fill = SNAKE_COLOR)
 
     snake.squares.insert(0, square)
-    del snake.coordinates[-1]
-    canvas.delete(snake.squares[-1])
-    del snake.squares[-1]
-    window.after(SPEED, next_turn, snake, food)
+
+    if x == food.coordinates[0] and y == food.coordinates[1]:
+        global score
+        score += 1
+        label.config(text=f"Score:{score}")
+        canvas.delete("food")
+        food = Food()
+    else:
+        del snake.coordinates[-1]
+        canvas.delete(snake.squares[-1])
+
+        del snake.squares[-1]
+    if check_collisions(snake):
+        game_over()
+    else:
+        window.after(SPEED, next_turn, snake, food)
 
 def change_direction(new_direction):
-    pass
+    global direction
+    
+    if new_direction == 'left':
+        if direction != 'right':
+            direction = new_direction
 
-def check_collisions():
+    elif new_direction == 'right':
+        if direction != 'left':
+            direction = new_direction
+
+    elif new_direction == 'up':
+        if direction != 'down':
+            direction = new_direction
+
+    elif new_direction == 'down':
+        if direction != 'up':
+            direction = new_direction
+
+def check_collisions(snake):
+    x, y = snake.coordinates[0]
+
+    if x < 0 or x >= WIDTH:
+        return True
+    
+    elif y < 0 or y >= HEIGHT:
+        return True
+    
+    for body in snake.coordinates[1::]:
+        if x == body[0] and y == body[1]:
+            return True
+        
+    return False
+
+def click():
     pass
 
 def game_over():
-    pass
+    canvas.delete(ALL)
+    canvas.create_text(canvas.winfo_width()/2, canvas.winfo_height()/2,
+                        font=('consolas', 70), text="GAME OVER", fill="white", tag="gameover")
+   
+
+
+
 
 window = Tk()
 window.title("Snake Game")
 window.resizable(False,False)
 
-
 score = 0
-direction = 'down'
+direction = 'right'
 
 label = Label(window, text = (f"Score: {score}"), font = ('consolas', 40))
 label.pack()
@@ -89,6 +138,14 @@ x = int((screen_width/2) - (window_width/2))
 y = int((sceen_height/2) - (window_height/2))
 
 window.geometry(f"{window_width}x{window_height}+{x}+{y}")
+
+window.bind('<Left>', lambda event: change_direction('left'))
+window.bind('<Right>', lambda event: change_direction('right'))
+window.bind('<Up>', lambda event: change_direction('up'))
+window.bind('<Down>', lambda event: change_direction('down'))
+
+icon = PhotoImage(file = 'Challenger_Emblem_2022.png')
+window.iconphoto(True,icon)
 
 snake = Snake()
 food = Food()
